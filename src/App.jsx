@@ -246,13 +246,13 @@ function HomePage({ setPage, setSelectedMarket }) {
     showResolved: false,
   })
 
-  const categories = ['All', 'OpenAI', 'Anthropic', 'Google', 'Meta', 'xAI', 'Mistral', 'DeepSeek', 'Apple', 'AGI']
+  const categories = ['All', 'OpenAI', 'Anthropic', 'Google', 'Meta', 'xAI', 'DeepSeek', 'Apple', 'AGI']
 
   const handleSeed = async () => {
     setSeeding(true)
     try {
       await seedMarkets()
-      showToast('12 AI prediction markets created! 🚀', 'success')
+      showToast('Prediction markets created', 'success')
     } catch (err) {
       showToast(err.message, 'error')
     }
@@ -606,9 +606,22 @@ function LeaderboardPage() {
 // PROFILE PAGE
 // ============================================================
 function ProfilePage() {
-  const { token } = useAuth()
+  const { token, deleteAccount, logout } = useAuth()
   const profile = useQuery(api.users.getProfile, { token: token || undefined })
   const userBets = useQuery(api.bets.getUserBets, { token: token || undefined })
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true)
+    try {
+      await deleteAccount()
+      showToast('Account deleted', 'success')
+    } catch (err) {
+      showToast(err.message, 'error')
+      setDeleting(false)
+    }
+  }
 
   if (!profile) {
     return <div className="loading-spinner"><div className="spinner"></div></div>
@@ -684,6 +697,41 @@ function ProfilePage() {
           </div>
         </>
       )}
+
+      {/* Account Actions */}
+      <div className="profile-actions">
+        <button className="profile-action-btn logout-btn" onClick={logout}>
+          Log Out
+        </button>
+
+        {!showDeleteConfirm ? (
+          <button
+            className="profile-action-btn delete-btn"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            Delete Account
+          </button>
+        ) : (
+          <div className="delete-confirm">
+            <p>Are you sure? This will permanently delete your account, all bets, and all data.</p>
+            <div className="delete-confirm-actions">
+              <button
+                className="profile-action-btn delete-btn"
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Yes, delete my account'}
+              </button>
+              <button
+                className="profile-action-btn cancel-btn"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -719,6 +767,7 @@ function AuthProvider({ children }) {
   const signupMutation = useMutation(api.auth.signup)
   const loginMutation = useMutation(api.auth.login)
   const logoutMutation = useMutation(api.auth.logout)
+  const deleteAccountMutation = useMutation(api.auth.deleteAccount)
   const claimMutation = useMutation(api.users.claimDailyCoins)
   const seedMutation = useMutation(api.seed.seedMarkets)
 
@@ -742,6 +791,13 @@ function AuthProvider({ children }) {
     setToken(null)
   }, [token, logoutMutation])
 
+  const deleteAccount = useCallback(async () => {
+    if (!token) throw new Error('Not logged in')
+    await deleteAccountMutation({ token })
+    localStorage.removeItem('betrelease_token')
+    setToken(null)
+  }, [token, deleteAccountMutation])
+
   const claimCoins = useCallback(async () => {
     if (!token) throw new Error('Not logged in')
     return await claimMutation({ token })
@@ -753,7 +809,7 @@ function AuthProvider({ children }) {
   }, [token, seedMutation])
 
   return (
-    <AuthContext.Provider value={{ user, token, login, signup, logout, claimCoins, seedMarkets }}>
+    <AuthContext.Provider value={{ user, token, login, signup, logout, deleteAccount, claimCoins, seedMarkets }}>
       {children}
     </AuthContext.Provider>
   )

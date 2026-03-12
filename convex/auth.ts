@@ -63,7 +63,7 @@ export const signup = mutation({
       userId,
       type: "signup_bonus",
       amount: 1000,
-      description: "Welcome bonus! 🎉",
+      description: "Welcome bonus",
       timestamp: now,
     });
 
@@ -128,6 +128,54 @@ export const logout = mutation({
   },
 });
 
+export const deleteAccount = mutation({
+  args: {
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("sessions")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .first();
+
+    if (!session) throw new Error("Not authenticated");
+
+    const userId = session.userId;
+
+    // Delete all user sessions
+    const sessions = await ctx.db
+      .query("sessions")
+      .filter((q) => q.eq(q.field("userId"), userId))
+      .collect();
+    for (const s of sessions) {
+      await ctx.db.delete(s._id);
+    }
+
+    // Delete all user bets
+    const bets = await ctx.db
+      .query("bets")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const bet of bets) {
+      await ctx.db.delete(bet._id);
+    }
+
+    // Delete all user transactions
+    const transactions = await ctx.db
+      .query("transactions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const tx of transactions) {
+      await ctx.db.delete(tx._id);
+    }
+
+    // Delete user
+    await ctx.db.delete(userId);
+
+    return { deleted: true };
+  },
+});
+
 export const getMe = query({
   args: {
     token: v.optional(v.string()),
@@ -157,3 +205,4 @@ export const getMe = query({
     };
   },
 });
+
