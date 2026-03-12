@@ -12,7 +12,7 @@ export const listMarkets = query({
     if (args.category) {
       markets = await ctx.db
         .query("markets")
-        .withIndex("by_category", (q) => q.eq("category", args.category))
+        .withIndex("by_category", (q) => q.eq("category", args.category!))
         .collect();
     } else {
       markets = await ctx.db.query("markets").collect();
@@ -62,11 +62,11 @@ export const getMarket = query({
     const creator = await ctx.db.get(market.createdBy);
 
     // Get current user's bets on this market
-    let userBets = [];
+    let userBets: typeof bets = [];
     if (args.token) {
       const session = await ctx.db
         .query("sessions")
-        .withIndex("by_token", (q) => q.eq("token", args.token))
+        .withIndex("by_token", (q) => q.eq("token", args.token!))
         .first();
       if (session) {
         userBets = bets.filter((b) => b.userId === session.userId);
@@ -173,7 +173,7 @@ export const resolveMarket = mutation({
             userId: bet.userId,
             type: "payout",
             amount: payout,
-            description: `Won on "${market.title}" 🎉`,
+            description: `Won on "${market.title}"`,
             timestamp: Date.now(),
           });
         }

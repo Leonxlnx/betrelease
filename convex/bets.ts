@@ -113,7 +113,7 @@ export const getUserBets = query({
 
     const session = await ctx.db
       .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .withIndex("by_token", (q) => q.eq("token", args.token!))
       .first();
     if (!session) return [];
 
@@ -131,7 +131,7 @@ export const getUserBets = query({
           marketTitle: market?.title || "Unknown Market",
           marketResolved: market?.resolved || false,
           marketOutcome: market?.outcome,
-          marketEmoji: market?.imageEmoji || "🎯",
+          marketCategory: market?.category || "",
         };
       })
     );

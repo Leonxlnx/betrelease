@@ -43,7 +43,7 @@ export const claimDailyCoins = mutation({
       userId: user._id,
       type: "daily_claim",
       amount: DAILY_COINS,
-      description: "Daily coin claim 🪙",
+      description: "Daily coin claim",
       timestamp: now,
     });
 
@@ -62,7 +62,7 @@ export const getProfile = query({
     if (!targetUserId && args.token) {
       const session = await ctx.db
         .query("sessions")
-        .withIndex("by_token", (q) => q.eq("token", args.token))
+        .withIndex("by_token", (q) => q.eq("token", args.token!))
         .first();
       if (session) targetUserId = session.userId;
     }

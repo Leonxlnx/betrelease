@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 // Simple hash function (we'll use this since bcryptjs needs Node.js runtime)
 // For a fun game with fake currency, this is perfectly fine
-async function hashPassword(password) {
+async function hashPassword(password: string) {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + "betrelease_salt_2026");
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
@@ -185,7 +185,7 @@ export const getMe = query({
 
     const session = await ctx.db
       .query("sessions")
-      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .withIndex("by_token", (q) => q.eq("token", args.token!))
       .first();
 
     if (!session || session.expiresAt < Date.now()) {
