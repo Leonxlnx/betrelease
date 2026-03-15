@@ -316,6 +316,24 @@ function HomePage({ setPage, setSelectedMarket }) {
         </div>
       ) : (
         <div className="category-groups">
+          <button
+            className="seed-btn"
+            style={{ marginBottom: 16, background: '#b91c1c' }}
+            onClick={async () => {
+              setClearing(true)
+              try {
+                await clearAll()
+                await seedMarkets()
+                showToast('Markets reset & reloaded', 'success')
+              } catch (err) {
+                showToast(err.message, 'error')
+              }
+              setClearing(false)
+            }}
+            disabled={clearing}
+          >
+            {clearing ? 'Resetting...' : 'Reset & Load New Markets'}
+          </button>
           {sortedCategories.map((cat) => {
             const config = CATEGORY_CONFIG[cat] || { bg: '#333', letter: '?', tagline: '' }
             const catMarkets = grouped[cat]
