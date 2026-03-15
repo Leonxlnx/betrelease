@@ -1,7 +1,41 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-// Seed market data for AI model predictions
+// Clear all existing markets and bets
+export const clearAll = mutation({
+  args: {
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("sessions")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .first();
+    if (!session) throw new Error("Not authenticated");
+
+    // Delete all bets
+    const bets = await ctx.db.query("bets").collect();
+    for (const bet of bets) {
+      await ctx.db.delete(bet._id);
+    }
+
+    // Delete all markets
+    const markets = await ctx.db.query("markets").collect();
+    for (const market of markets) {
+      await ctx.db.delete(market._id);
+    }
+
+    // Delete all transactions
+    const transactions = await ctx.db.query("transactions").collect();
+    for (const tx of transactions) {
+      await ctx.db.delete(tx._id);
+    }
+
+    return { deleted: { bets: bets.length, markets: markets.length, transactions: transactions.length } };
+  },
+});
+
+// Seed market data — organized by model, not company
 export const seedMarkets = mutation({
   args: {
     token: v.string(),
@@ -17,204 +51,144 @@ export const seedMarkets = mutation({
     const userId = session.userId;
 
     const markets = [
-      // ─── DeepSeek v4 Launch ───
+      // ─── Gemini ───
       {
-        title: "DeepSeek v4 drops this week?",
+        title: "Gemini 3.5 released by Q3 2026?",
         description:
-          "Will DeepSeek officially release or announce v4 during the current week of March 15-21, 2026?",
-        category: "DeepSeek",
-        endDate: new Date("2026-03-21").getTime(),
-        imageEmoji: "DS",
+          "Will Google DeepMind release Gemini 3.5 (focused on efficiency) before the end of Q3 2026?",
+        category: "Gemini",
+        endDate: new Date("2026-09-30").getTime(),
+        imageEmoji: "GM",
       },
       {
-        title: "DeepSeek v4 released in March?",
+        title: "Gemini 4.0 released by end of 2026?",
         description:
-          "Will DeepSeek release v4 before the end of March 2026?",
-        category: "DeepSeek",
-        endDate: new Date("2026-03-31").getTime(),
-        imageEmoji: "DS",
+          "Will Google DeepMind release Gemini 4.0 — the next major architecture leap — before December 31, 2026?",
+        category: "Gemini",
+        endDate: new Date("2026-12-31").getTime(),
+        imageEmoji: "GM",
       },
       {
-        title: "DeepSeek v4 released in Q2 2026?",
+        title: "Gemini 4 Ultra ships by Q1 2027?",
         description:
-          "Will DeepSeek release v4 during Q2 (April-June) 2026?",
+          "Will Google DeepMind release Gemini 4 Ultra — the new heavyweight model — before March 31, 2027?",
+        category: "Gemini",
+        endDate: new Date("2027-03-31").getTime(),
+        imageEmoji: "GM",
+      },
+
+      // ─── GPT ───
+      {
+        title: "GPT-5.5 released by Summer 2026?",
+        description:
+          "Will OpenAI release GPT-5.5 — an intermediate update focused on error reduction — before August 31, 2026?",
+        category: "GPT",
+        endDate: new Date("2026-08-31").getTime(),
+        imageEmoji: "GP",
+      },
+      {
+        title: "Sora 2.0 / full video integration by Fall 2026?",
+        description:
+          "Will OpenAI ship Sora 2.0 or integrate full video multimodality into the core GPT model before November 30, 2026?",
+        category: "GPT",
+        endDate: new Date("2026-11-30").getTime(),
+        imageEmoji: "GP",
+      },
+      {
+        title: "GPT-6 released by Spring 2027?",
+        description:
+          "Will OpenAI release GPT-6 — the next generation focused on autonomous agents — before May 31, 2027?",
+        category: "GPT",
+        endDate: new Date("2027-05-31").getTime(),
+        imageEmoji: "GP",
+      },
+
+      // ─── Claude ───
+      {
+        title: "Claude 4.7 released by Q3 2026?",
+        description:
+          "Will Anthropic release Claude 4.7 — fine-tuned for coding — before September 30, 2026?",
+        category: "Claude",
+        endDate: new Date("2026-09-30").getTime(),
+        imageEmoji: "CL",
+      },
+      {
+        title: "Claude 5 Sonnet released by end of 2026?",
+        description:
+          "Will Anthropic release Claude 5 Sonnet — the fast, everyday model of the next generation — before December 31, 2026?",
+        category: "Claude",
+        endDate: new Date("2026-12-31").getTime(),
+        imageEmoji: "CL",
+      },
+      {
+        title: "Claude 5 Opus ships by Q1 2027?",
+        description:
+          "Will Anthropic release Claude 5 Opus — the maximum reasoning model — before March 31, 2027?",
+        category: "Claude",
+        endDate: new Date("2027-03-31").getTime(),
+        imageEmoji: "CL",
+      },
+
+      // ─── Llama ───
+      {
+        title: "Llama 4.1 released by Summer 2026?",
+        description:
+          "Will Meta release Llama 4.1 as an open-source update before August 31, 2026?",
+        category: "Llama",
+        endDate: new Date("2026-08-31").getTime(),
+        imageEmoji: "LL",
+      },
+      {
+        title: "Llama 4 Vision released by Fall 2026?",
+        description:
+          "Will Meta release Llama 4 Vision with extended image/video capabilities before November 30, 2026?",
+        category: "Llama",
+        endDate: new Date("2026-11-30").getTime(),
+        imageEmoji: "LL",
+      },
+      {
+        title: "Llama 5 released by mid 2027?",
+        description:
+          "Will Meta release Llama 5 — the next major base model — before June 30, 2027?",
+        category: "Llama",
+        endDate: new Date("2027-06-30").getTime(),
+        imageEmoji: "LL",
+      },
+
+      // ─── Grok ───
+      {
+        title: "Grok 4.5 released by Q3 2026?",
+        description:
+          "Will xAI release Grok 4.5 before September 30, 2026?",
+        category: "Grok",
+        endDate: new Date("2026-09-30").getTime(),
+        imageEmoji: "GK",
+      },
+      {
+        title: "Grok 5 released by early 2027?",
+        description:
+          "Will xAI release Grok 5 before March 31, 2027?",
+        category: "Grok",
+        endDate: new Date("2027-03-31").getTime(),
+        imageEmoji: "GK",
+      },
+
+      // ─── DeepSeek ───
+      {
+        title: "DeepSeek Coder V3 released by mid 2026?",
+        description:
+          "Will DeepSeek release Coder V3 before June 30, 2026?",
         category: "DeepSeek",
         endDate: new Date("2026-06-30").getTime(),
         imageEmoji: "DS",
       },
       {
-        title: "DeepSeek v4 beats GPT-5 on MMLU?",
+        title: "DeepSeek V4 released by early 2027?",
         description:
-          "If both DeepSeek v4 and GPT-5 are released, will DeepSeek v4 score higher on the MMLU benchmark?",
+          "Will DeepSeek release V4 before March 31, 2027?",
         category: "DeepSeek",
-        endDate: new Date("2026-12-31").getTime(),
+        endDate: new Date("2027-03-31").getTime(),
         imageEmoji: "DS",
-      },
-
-      // ─── GPT-5 Launch ───
-      {
-        title: "GPT-5 released before May 2026?",
-        description:
-          "Will OpenAI release GPT-5 (a full new model, not GPT-4o/4.5 updates) before May 1, 2026?",
-        category: "OpenAI",
-        endDate: new Date("2026-05-01").getTime(),
-        imageEmoji: "OA",
-      },
-      {
-        title: "GPT-5 released before July 2026?",
-        description:
-          "Will OpenAI release GPT-5 before July 1, 2026?",
-        category: "OpenAI",
-        endDate: new Date("2026-07-01").getTime(),
-        imageEmoji: "OA",
-      },
-      {
-        title: "GPT-5 is multimodal at launch?",
-        description:
-          "Will GPT-5 support text, image, audio, and video input/output at launch?",
-        category: "OpenAI",
-        endDate: new Date("2026-12-31").getTime(),
-        imageEmoji: "OA",
-      },
-      {
-        title: "OpenAI releases AI Agent product in 2026?",
-        description:
-          "Will OpenAI release a standalone AI agent product (not just ChatGPT plugins) during 2026?",
-        category: "OpenAI",
-        endDate: new Date("2026-12-31").getTime(),
-        imageEmoji: "OA",
-      },
-
-      // ─── Claude 4 Launch ───
-      {
-        title: "Claude 4 released before June 2026?",
-        description:
-          "Will Anthropic release Claude 4 (major version upgrade, not 3.5 updates) before June 1, 2026?",
-        category: "Anthropic",
-        endDate: new Date("2026-06-01").getTime(),
-        imageEmoji: "AN",
-      },
-      {
-        title: "Claude 4 released before September 2026?",
-        description:
-          "Will Anthropic release Claude 4 before September 1, 2026?",
-        category: "Anthropic",
-        endDate: new Date("2026-09-01").getTime(),
-        imageEmoji: "AN",
-      },
-      {
-        title: "Anthropic valued at $100B+ by end of 2026?",
-        description:
-          "Will Anthropic's valuation reach or exceed $100 billion by December 31, 2026?",
-        category: "Anthropic",
-        endDate: new Date("2026-12-31").getTime(),
-        imageEmoji: "AN",
-      },
-
-      // ─── Gemini 3.0 / Google ───
-      {
-        title: "Gemini 3.0 before September 2026?",
-        description:
-          "Will Google DeepMind release Gemini 3.0 (not 2.x updates) before September 1, 2026?",
-        category: "Google",
-        endDate: new Date("2026-09-01").getTime(),
-        imageEmoji: "GG",
-      },
-      {
-        title: "Gemini UX 2.0 Update this quarter?",
-        description:
-          "Will Google release the Gemini UX 2.0 major interface update during Q1 2026?",
-        category: "Google",
-        endDate: new Date("2026-03-31").getTime(),
-        imageEmoji: "GG",
-      },
-      {
-        title: "Gemini UX 2.0 Update in Q2?",
-        description:
-          "Will Google release the Gemini UX 2.0 major interface update during Q2 (Apr-Jun) 2026?",
-        category: "Google",
-        endDate: new Date("2026-06-30").getTime(),
-        imageEmoji: "GG",
-      },
-
-      // ─── Meta / Llama ───
-      {
-        title: "Llama 5 open-source release in 2026?",
-        description:
-          "Will Meta release Llama 5 (fully open-source/open-weight) during calendar year 2026?",
-        category: "Meta",
-        endDate: new Date("2026-12-31").getTime(),
-        imageEmoji: "MT",
-      },
-      {
-        title: "Llama 5 beats Claude 4 on coding benchmarks?",
-        description:
-          "If both are released, will Llama 5 outscore Claude 4 on HumanEval and SWE-Bench?",
-        category: "Meta",
-        endDate: new Date("2026-12-31").getTime(),
-        imageEmoji: "MT",
-      },
-
-      // ─── xAI / Grok ───
-      {
-        title: "Grok 4 before August 2026?",
-        description:
-          "Will xAI release Grok 4 before August 1, 2026?",
-        category: "xAI",
-        endDate: new Date("2026-08-01").getTime(),
-        imageEmoji: "XA",
-      },
-      {
-        title: "Grok gets image generation in 2026?",
-        description:
-          "Will xAI ship native image generation (not via Aurora) in Grok during 2026?",
-        category: "xAI",
-        endDate: new Date("2026-12-31").getTime(),
-        imageEmoji: "XA",
-      },
-
-      // ─── Apple ───
-      {
-        title: "Apple releases its own LLM before Oct 2026?",
-        description:
-          "Will Apple release a standalone large language model (not on-device Apple Intelligence updates) before October 1, 2026?",
-        category: "Apple",
-        endDate: new Date("2026-10-01").getTime(),
-        imageEmoji: "AP",
-      },
-      {
-        title: "Apple Intelligence gets coding assistant?",
-        description:
-          "Will Apple ship a dedicated coding assistant (like Copilot) in Xcode by end of 2026?",
-        category: "Apple",
-        endDate: new Date("2026-12-31").getTime(),
-        imageEmoji: "AP",
-      },
-
-      // ─── AGI / Industry ───
-      {
-        title: "Any model surpasses 95% on ARC-AGI?",
-        description:
-          "Will any AI model achieve above 95% accuracy on the ARC-AGI benchmark before January 1, 2027?",
-        category: "AGI",
-        endDate: new Date("2027-01-01").getTime(),
-        imageEmoji: "AG",
-      },
-      {
-        title: "First $1 trillion AI company by end of 2026?",
-        description:
-          "Will any pure-play AI company (not big tech) reach a $1 trillion market cap or valuation by Dec 31, 2026?",
-        category: "AGI",
-        endDate: new Date("2026-12-31").getTime(),
-        imageEmoji: "AG",
-      },
-      {
-        title: "AI passes the Turing Test in a formal study?",
-        description:
-          "Will an AI system pass a peer-reviewed, formal Turing Test with >70% of judges fooled by end of 2026?",
-        category: "AGI",
-        endDate: new Date("2026-12-31").getTime(),
-        imageEmoji: "AG",
       },
     ];
 

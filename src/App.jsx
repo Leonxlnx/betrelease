@@ -45,14 +45,12 @@ function formatTimeAgo(ts) {
 
 // Category config with colors and icons
 const CATEGORY_CONFIG = {
-  DeepSeek: { bg: '#1d4ed8', letter: 'DS', tagline: 'v4 Launch & Beyond' },
-  OpenAI: { bg: '#16a34a', letter: 'OA', tagline: 'GPT-5 & Agent Era' },
-  Anthropic: { bg: '#b45309', letter: 'AN', tagline: 'Claude 4 & Valuation' },
-  Google: { bg: '#2563eb', letter: 'GG', tagline: 'Gemini 3.0 & UX 2.0' },
-  Meta: { bg: '#0369a1', letter: 'MT', tagline: 'Llama 5 Open Source' },
-  xAI: { bg: '#be123c', letter: 'XA', tagline: 'Grok 4 & Image Gen' },
-  Apple: { bg: '#7c3aed', letter: 'AP', tagline: 'LLM & Xcode AI' },
-  AGI: { bg: '#c2410c', letter: 'AG', tagline: 'Benchmarks & Milestones' },
+  Gemini: { bg: '#2563eb', letter: 'GM', tagline: 'Google DeepMind' },
+  GPT: { bg: '#16a34a', letter: 'GP', tagline: 'OpenAI' },
+  Claude: { bg: '#b45309', letter: 'CL', tagline: 'Anthropic' },
+  Llama: { bg: '#0369a1', letter: 'LL', tagline: 'Meta AI' },
+  Grok: { bg: '#be123c', letter: 'GK', tagline: 'xAI' },
+  DeepSeek: { bg: '#1d4ed8', letter: 'DS', tagline: 'DeepSeek AI' },
 }
 
 // ============================================================
@@ -250,8 +248,9 @@ function Header({ page, setPage }) {
 // HOME PAGE - Category Groups
 // ============================================================
 function HomePage({ setPage, setSelectedMarket }) {
-  const { seedMarkets } = useAuth()
+  const { seedMarkets, clearAll } = useAuth()
   const [seeding, setSeeding] = useState(false)
+  const [clearing, setClearing] = useState(false)
   const [expandedCategory, setExpandedCategory] = useState(null)
 
   const markets = useQuery(api.markets.listMarkets, {
@@ -270,6 +269,17 @@ function HomePage({ setPage, setSelectedMarket }) {
     setSeeding(false)
   }
 
+  const handleClear = async () => {
+    setClearing(true)
+    try {
+      await clearAll()
+      showToast('All markets cleared — re-seed to load new ones', 'success')
+    } catch (err) {
+      showToast(err.message, 'error')
+    }
+    setClearing(false)
+  }
+
   // Group markets by category
   const grouped = {}
   if (markets) {
@@ -279,7 +289,7 @@ function HomePage({ setPage, setSelectedMarket }) {
     })
   }
 
-  const categoryOrder = ['DeepSeek', 'OpenAI', 'Anthropic', 'Google', 'Meta', 'xAI', 'Apple', 'AGI']
+  const categoryOrder = ['Gemini', 'GPT', 'Claude', 'Llama', 'Grok', 'DeepSeek']
   const sortedCategories = categoryOrder.filter((c) => grouped[c])
 
   return (
@@ -834,6 +844,7 @@ function AuthProvider({ children }) {
   const deleteAccountMutation = useMutation(api.auth.deleteAccount)
   const claimMutation = useMutation(api.users.claimDailyCoins)
   const seedMutation = useMutation(api.seed.seedMarkets)
+  const clearAllMutation = useMutation(api.seed.clearAll)
 
   const login = useCallback(async (username, password) => {
     const result = await loginMutation({ username, password })
@@ -872,8 +883,13 @@ function AuthProvider({ children }) {
     return await seedMutation({ token })
   }, [token, seedMutation])
 
+  const clearAll = useCallback(async () => {
+    if (!token) throw new Error('Not logged in')
+    return await clearAllMutation({ token })
+  }, [token, clearAllMutation])
+
   return (
-    <AuthContext.Provider value={{ user, token, login, signup, logout, deleteAccount, claimCoins, seedMarkets }}>
+    <AuthContext.Provider value={{ user, token, login, signup, logout, deleteAccount, claimCoins, seedMarkets, clearAll }}>
       {children}
     </AuthContext.Provider>
   )
