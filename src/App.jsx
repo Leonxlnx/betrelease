@@ -43,6 +43,18 @@ function formatTimeAgo(ts) {
   return `${days}d ago`
 }
 
+// Category config with colors and icons
+const CATEGORY_CONFIG = {
+  DeepSeek: { bg: '#1d4ed8', letter: 'DS', tagline: 'v4 Launch & Beyond' },
+  OpenAI: { bg: '#16a34a', letter: 'OA', tagline: 'GPT-5 & Agent Era' },
+  Anthropic: { bg: '#b45309', letter: 'AN', tagline: 'Claude 4 & Valuation' },
+  Google: { bg: '#2563eb', letter: 'GG', tagline: 'Gemini 3.0 & UX 2.0' },
+  Meta: { bg: '#0369a1', letter: 'MT', tagline: 'Llama 5 Open Source' },
+  xAI: { bg: '#be123c', letter: 'XA', tagline: 'Grok 4 & Image Gen' },
+  Apple: { bg: '#7c3aed', letter: 'AP', tagline: 'LLM & Xcode AI' },
+  AGI: { bg: '#c2410c', letter: 'AG', tagline: 'Benchmarks & Milestones' },
+}
+
 // ============================================================
 // AUTH PAGE
 // ============================================================
@@ -75,7 +87,7 @@ function AuthPage() {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-header">
-          <span className="logo-icon">BR</span>
+          <div className="auth-logo-glow">BR</div>
           <h1>BetRelease</h1>
           <p>Predict AI model releases. Win coins. Beat your friends.</p>
         </div>
@@ -143,9 +155,9 @@ function AuthPage() {
 
           {mode === 'signup' && (
             <div className="auth-bonus">
-              <span className="auth-bonus-emoji">+</span>
+              <span className="auth-bonus-coins">+1,000</span>
               <span className="auth-bonus-text">
-                Sign up and get 1,000 free coins to start betting
+                Free coins on signup to start betting
               </span>
             </div>
           )}
@@ -180,7 +192,7 @@ function Header({ page, setPage }) {
       <div className="header-inner">
         <div className="header-left">
           <div className="logo" onClick={() => setPage('home')}>
-            <span className="logo-icon">BR</span>
+            <span className="logo-mark">BR</span>
             <span className="logo-text">BetRelease</span>
           </div>
           <nav className="nav">
@@ -208,13 +220,13 @@ function Header({ page, setPage }) {
         <div className="header-right">
           {canClaim && (
             <button className="claim-btn" onClick={handleClaim} disabled={claiming}>
-              <span className="shimmer"></span>
-              {claiming ? '...' : 'Claim +50'}
+              <span className="claim-pulse"></span>
+              {claiming ? '...' : '+50'}
             </button>
           )}
 
           <div className="coin-display">
-            <span className="coin-icon">C</span>
+            <span className="coin-icon-glow">◆</span>
             {user?.coins?.toLocaleString() || 0}
           </div>
 
@@ -225,7 +237,7 @@ function Header({ page, setPage }) {
             <span>{user?.displayName || 'User'}</span>
           </button>
 
-          <button className="nav-btn" onClick={logout} title="Logout" style={{fontSize: '16px'}}>
+          <button className="nav-btn logout-icon" onClick={logout} title="Logout">
             ↪
           </button>
         </div>
@@ -235,18 +247,17 @@ function Header({ page, setPage }) {
 }
 
 // ============================================================
-// HOME PAGE - Markets List
+// HOME PAGE - Category Groups
 // ============================================================
 function HomePage({ setPage, setSelectedMarket }) {
   const { seedMarkets } = useAuth()
-  const [category, setCategory] = useState(null)
   const [seeding, setSeeding] = useState(false)
+  const [expandedCategory, setExpandedCategory] = useState(null)
+
   const markets = useQuery(api.markets.listMarkets, {
-    category: category || undefined,
+    category: undefined,
     showResolved: false,
   })
-
-  const categories = ['All', 'OpenAI', 'Anthropic', 'Google', 'Meta', 'xAI', 'DeepSeek', 'Apple', 'AGI']
 
   const handleSeed = async () => {
     setSeeding(true)
@@ -259,6 +270,18 @@ function HomePage({ setPage, setSelectedMarket }) {
     setSeeding(false)
   }
 
+  // Group markets by category
+  const grouped = {}
+  if (markets) {
+    markets.forEach((m) => {
+      if (!grouped[m.category]) grouped[m.category] = []
+      grouped[m.category].push(m)
+    })
+  }
+
+  const categoryOrder = ['DeepSeek', 'OpenAI', 'Anthropic', 'Google', 'Meta', 'xAI', 'Apple', 'AGI']
+  const sortedCategories = categoryOrder.filter((c) => grouped[c])
+
   return (
     <div>
       <div className="page-header">
@@ -266,28 +289,15 @@ function HomePage({ setPage, setSelectedMarket }) {
         <p className="page-subtitle">Bet on the next big AI model release</p>
       </div>
 
-      <div className="category-filters">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            className={`category-chip ${(cat === 'All' && !category) || category === cat ? 'active' : ''}`}
-            onClick={() => setCategory(cat === 'All' ? null : cat)}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
       {!markets ? (
         <div className="loading-spinner"><div className="spinner"></div></div>
-      ) : markets.length === 0 ? (
+      ) : sortedCategories.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">+</div>
+          <div className="empty-state-icon">⚡</div>
           <div className="empty-state-title">No markets yet</div>
-          <p>Be the first to get started</p>
+          <p>Load the AI prediction markets to get started</p>
           <button
-            className="auth-submit"
-            style={{ maxWidth: 300, margin: '20px auto 0' }}
+            className="seed-btn"
             onClick={handleSeed}
             disabled={seeding}
           >
@@ -295,17 +305,60 @@ function HomePage({ setPage, setSelectedMarket }) {
           </button>
         </div>
       ) : (
-        <div className="markets-grid">
-          {markets.map((market) => (
-            <MarketCard
-              key={market._id}
-              market={market}
-              onClick={() => {
-                setSelectedMarket(market._id)
-                setPage('market')
-              }}
-            />
-          ))}
+        <div className="category-groups">
+          {sortedCategories.map((cat) => {
+            const config = CATEGORY_CONFIG[cat] || { bg: '#333', letter: '?', tagline: '' }
+            const catMarkets = grouped[cat]
+            const isExpanded = expandedCategory === cat
+            const totalVolume = catMarkets.reduce((sum, m) => sum + m.totalVolume, 0)
+            const avgProb = Math.round(catMarkets.reduce((sum, m) => sum + m.yesProbability, 0) / catMarkets.length)
+
+            return (
+              <div key={cat} className={`category-group ${isExpanded ? 'expanded' : ''}`}>
+                <div
+                  className="category-header"
+                  onClick={() => setExpandedCategory(isExpanded ? null : cat)}
+                >
+                  <div className="category-header-left">
+                    <div className="category-icon" style={{ background: config.bg }}>
+                      {config.letter}
+                    </div>
+                    <div className="category-info">
+                      <div className="category-name">{cat}</div>
+                      <div className="category-tagline">{config.tagline}</div>
+                    </div>
+                  </div>
+                  <div className="category-header-right">
+                    <div className="category-stats">
+                      <span className="cat-stat">
+                        <span className="cat-stat-value">{catMarkets.length}</span> markets
+                      </span>
+                      <span className="cat-stat">
+                        <span className="cat-stat-value">{totalVolume.toLocaleString()}</span> vol
+                      </span>
+                    </div>
+                    <div className={`category-arrow ${isExpanded ? 'rotated' : ''}`}>›</div>
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="category-markets">
+                    {catMarkets.map((market) => (
+                      <MarketCard
+                        key={market._id}
+                        market={market}
+                        config={config}
+                        onClick={() => {
+                          setSelectedMarket(market._id)
+                          setPage('market')
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
@@ -313,39 +366,42 @@ function HomePage({ setPage, setSelectedMarket }) {
 }
 
 // ============================================================
-// MARKET CARD
+// MARKET CARD (inside category group)
 // ============================================================
-function MarketCard({ market, onClick }) {
+function MarketCard({ market, config, onClick }) {
   const daysLeft = Math.max(0, Math.ceil((market.endDate - Date.now()) / (1000 * 60 * 60 * 24)))
 
   return (
     <div className="market-card" onClick={onClick}>
-      <div className="market-card-top">
-        <div className="market-emoji">{market.category?.[0] || '?'}</div>
-        <div>
-          <div className="market-title">{market.title}</div>
-          <div className="market-meta">
-            <span className="market-category">{market.category}</span>
-            <span className="market-deadline">
-              {daysLeft > 0 ? `${daysLeft} days left` : 'Ended'}
-            </span>
-          </div>
+      <div className="market-card-content">
+        <div className="market-title">{market.title}</div>
+        <div className="market-meta-row">
+          <span className="market-deadline-chip">
+            {daysLeft > 0 ? `${daysLeft}d left` : 'Ended'}
+          </span>
+          {market.totalVolume > 0 && (
+            <span className="market-vol-chip">Vol: {market.totalVolume.toLocaleString()}</span>
+          )}
         </div>
       </div>
 
-      <div className="prob-bar-container">
-        <div className="prob-labels">
-          <span className="prob-label yes">Yes {market.yesProbability}%</span>
-          <span className="prob-label no">No {market.noProbability}%</span>
-        </div>
-        <div className="prob-bar">
-          <div className="prob-bar-fill" style={{ width: `${market.yesProbability}%` }}></div>
-        </div>
-      </div>
-
-      <div className="market-footer">
-        <div className="market-volume">
-          Vol: <span>{market.totalVolume.toLocaleString()}</span>
+      <div className="market-card-right">
+        <div className="prob-donut">
+          <svg viewBox="0 0 36 36" className="circular-chart">
+            <path
+              className="circle-bg"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+            <path
+              className="circle-fill"
+              style={{
+                strokeDasharray: `${market.yesProbability}, 100`,
+                stroke: market.yesProbability >= 50 ? 'var(--accent-emerald)' : 'var(--accent-rose)',
+              }}
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+          </svg>
+          <span className="prob-donut-value">{market.yesProbability}%</span>
         </div>
       </div>
     </div>
@@ -370,6 +426,7 @@ function MarketPage({ marketId, setPage }) {
 
   const daysLeft = Math.max(0, Math.ceil((market.endDate - Date.now()) / (1000 * 60 * 60 * 24)))
   const isEnded = market.endDate < Date.now() || market.resolved
+  const config = CATEGORY_CONFIG[market.category] || { bg: '#333', letter: '?' }
 
   // Calculate potential payout
   const currentSideCoins = side === 'yes' ? market.totalYesCoins : market.totalNoCoins
@@ -417,7 +474,9 @@ function MarketPage({ marketId, setPage }) {
                 {market.outcome ? 'Resolved YES' : 'Resolved NO'}
               </div>
             )}
-            <div className="detail-emoji">{market.category?.[0] || '?'}</div>
+            <div className="detail-icon" style={{ background: config.bg }}>
+              {config.letter}
+            </div>
             <h1 className="detail-title">{market.title}</h1>
             <p className="detail-description">{market.description}</p>
 
@@ -426,7 +485,7 @@ function MarketPage({ marketId, setPage }) {
                 <span className="prob-label yes">Yes {market.yesProbability}%</span>
                 <span className="prob-label no">No {market.noProbability}%</span>
               </div>
-              <div className="prob-bar" style={{ height: 12 }}>
+              <div className="prob-bar">
                 <div className="prob-bar-fill" style={{ width: `${market.yesProbability}%` }}></div>
               </div>
             </div>
@@ -495,7 +554,7 @@ function MarketPage({ marketId, setPage }) {
                     <span className="amount-balance">Balance: {user?.coins?.toLocaleString() || 0}</span>
                   </div>
                   <div className="amount-input-wrapper">
-                    <span className="amount-prefix">C</span>
+                    <span className="amount-prefix">◆</span>
                     <input
                       className="amount-input"
                       type="number"
@@ -634,7 +693,7 @@ function ProfilePage() {
       </div>
 
       <div className="detail-card profile-header-card">
-        <div className="profile-avatar">
+        <div className="profile-avatar-glow">
           {profile.displayName?.[0]?.toUpperCase() || '?'}
         </div>
         <div className="profile-info">
@@ -659,21 +718,26 @@ function ProfilePage() {
         <>
           <h3 className="profile-section-title">Your Bets</h3>
           <div className="leaderboard-list">
-            {userBets.map((bet) => (
-              <div key={bet._id} className="leaderboard-item">
-                <div className="market-emoji">{bet.marketCategory?.[0] || '?'}</div>
-                <div className="lb-info">
-                  <div className="lb-name" style={{ fontSize: 14 }}>{bet.marketTitle}</div>
-                  <div className="lb-username">
-                    <span className={`user-bet-side ${bet.side}`}>{bet.side.toUpperCase()}</span>
-                    {' '}{bet.shares} shares • {formatTimeAgo(bet.timestamp)}
+            {userBets.map((bet) => {
+              const config = CATEGORY_CONFIG[bet.marketCategory] || { bg: '#333', letter: '?' }
+              return (
+                <div key={bet._id} className="leaderboard-item">
+                  <div className="category-icon-sm" style={{ background: config.bg }}>
+                    {config.letter}
+                  </div>
+                  <div className="lb-info">
+                    <div className="lb-name" style={{ fontSize: 14 }}>{bet.marketTitle}</div>
+                    <div className="lb-username">
+                      <span className={`user-bet-side ${bet.side}`}>{bet.side.toUpperCase()}</span>
+                      {' '}{bet.shares} shares • {formatTimeAgo(bet.timestamp)}
+                    </div>
+                  </div>
+                  <div className="lb-coins" style={{ fontSize: 14 }}>
+                    {bet.amount} coins
                   </div>
                 </div>
-                <div className="lb-coins" style={{ fontSize: 14 }}>
-                  {bet.amount} coins
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </>
       )}
